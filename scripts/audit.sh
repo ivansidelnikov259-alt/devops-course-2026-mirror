@@ -61,6 +61,22 @@ check "Порт 5432 не прослушивается" "" "$(ss -tln | awk '/:5
 
 # г) права файла .env равны 600
 check "Права .env = 600" "600" "$(stat -c '%a' ~/app/.env)"
+echo "[6] Контрольная работа №2"
+
+# а) контейнер redis в состоянии healthy
+check "Контейнер Redis в состоянии healthy" "healthy" "$(docker compose --project-directory ~/kr2 ps -q redis | xargs -r docker inspect -f '{{.State.Health.Status}}' 2>/dev/null)"
+
+# б) порт 8003 опубликован только на 127.0.0.1
+check "Порт 8003 только на 127.0.0.1" "127.0.0.1:8003" "$(docker compose --project-directory ~/kr2 port app 8003 2>/dev/null)"
+
+# в) права файла .env равны 600
+check "Права .env = 600" "600" "$(stat -c '%a' ~/kr2/.env 2>/dev/null)"
+
+# г) сертификат kr2.crt истекает не ранее чем через 30 дней
+check "Сертификат kr2 действителен >30 дней" "0" "$(sudo openssl x509 -checkend 2592000 -noout -in /etc/ssl/certs/kr2.crt >/dev/null 2>&1; echo $?)"
+
+# д) ресурс kr2 активирован (симлинк в sites-enabled)
+check "Ресурс kr2 активирован" "yes" "$(test -L /etc/nginx/sites-enabled/kr2 && echo yes || echo no)"
 
 echo "Пройдено: $PASS, не пройдено: $FAIL"
 [[ $FAIL -eq 0 ]] && exit 0 || exit 1
